@@ -321,6 +321,7 @@ client.on('warn', warning => {
 // Express server for Render health check
 const app = express();
 const PORT = process.env.PORT || 3000;
+const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL;
 
 app.get('/', (req, res) => {
   res.json({
@@ -338,6 +339,21 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🌐 Health server running on port ${PORT}`);
 });
+
+// Self-ping every 10 minutes to keep Render service alive
+if (RENDER_EXTERNAL_URL) {
+  setInterval(async () => {
+    try {
+      const response = await fetch(`${RENDER_EXTERNAL_URL}/health`);
+      const data = await response.json();
+      console.log('🏓 Self-ping successful:', data.status);
+    } catch (error) {
+      console.error('❌ Self-ping failed:', error.message);
+    }
+  }, 10 * 60 * 1000); // 10 minutes
+  
+  console.log('✅ Self-ping enabled - pinging every 10 minutes');
+}
 
 // Start bot
 async function start() {
